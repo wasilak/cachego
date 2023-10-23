@@ -57,7 +57,7 @@ func (c *RedisCache) Init() error {
 
 // The `Get` function is a method of the `RedisCache` struct. It is used to retrieve an item from the
 // Redis cache based on the provided cache key.
-func (c *RedisCache) Get(cacheKey string) (interface{}, bool, error) {
+func (c *RedisCache) Get(cacheKey string) (string, bool, error) {
 	_, span := c.Config.Tracer.Start(c.Config.CTX, "Get")
 	defer span.End()
 
@@ -81,7 +81,7 @@ func (c *RedisCache) Get(cacheKey string) (interface{}, bool, error) {
 
 // The `Set` function is a method of the `RedisCache` struct. It is used to store an item in the Redis
 // cache with the provided cache key.
-func (c *RedisCache) Set(cacheKey string, item interface{}) error {
+func (c *RedisCache) Set(cacheKey string, item []byte) error {
 	_, span := c.Config.Tracer.Start(c.Config.CTX, "Set")
 	defer span.End()
 
@@ -105,7 +105,7 @@ func (c *RedisCache) GetItemTTL(cacheKey string) (time.Duration, bool, error) {
 
 // The `ExtendTTL` function is a method of the `RedisCache` struct. It is used to extend the
 // time-to-live (TTL) duration of an item in the Redis cache based on the provided cache key.
-func (c *RedisCache) ExtendTTL(cacheKey string, item interface{}) error {
+func (c *RedisCache) ExtendTTL(cacheKey string, item []byte) error {
 	_, span := c.Config.Tracer.Start(c.Config.CTX, "ExtendTTL")
 	defer span.End()
 

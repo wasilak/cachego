@@ -41,13 +41,13 @@ func (c *GoCache) Init() error {
 	return nil
 }
 
-func (c *GoCache) Get(cacheKey string) (interface{}, bool, error) {
+func (c *GoCache) Get(cacheKey string) (string, bool, error) {
 	_, span := c.Config.Tracer.Start(c.Config.CTX, "Get")
 	defer span.End()
 
 	item, found := c.Cache.Get(cacheKey)
 
-	return item, found, nil
+	return item.(string), found, nil
 }
 
 // The `Set` function is used to store an item in the cache. It takes two parameters: `cacheKey`, which
@@ -56,7 +56,7 @@ func (c *GoCache) Get(cacheKey string) (interface{}, bool, error) {
 // using the `gocache.Set` method. It also sets the time-to-live (TTL) for the item to the value
 // specified in the `TTL` property of the `GoCache` struct. Finally, it returns an error if any
 // occurred during the operation.
-func (c *GoCache) Set(cacheKey string, item interface{}) error {
+func (c *GoCache) Set(cacheKey string, item []byte) error {
 	_, span := c.Config.Tracer.Start(c.Config.CTX, "Set")
 	defer span.End()
 
@@ -83,7 +83,7 @@ func (c *GoCache) GetItemTTL(cacheKey string) (time.Duration, bool, error) {
 // The `ExtendTTL` function is used to extend the time-to-live (TTL) duration of a specific item in the
 // cache. It takes two parameters: `cacheKey`, which is a string representing the key of the item, and
 // `item`, which is the updated value of the item.
-func (c *GoCache) ExtendTTL(cacheKey string, item interface{}) error {
+func (c *GoCache) ExtendTTL(cacheKey string, item []byte) error {
 	_, span := c.Config.Tracer.Start(c.Config.CTX, "ExtendTTL")
 	defer span.End()
 

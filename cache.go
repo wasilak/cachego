@@ -29,11 +29,11 @@ import (
 // identify the cached item, and the item is the updated value that will be stored in the cache.
 type CacheInterface interface {
 	Init() error
-	Get(cacheKey string) (interface{}, bool, error)
+	Get(cacheKey string) (string, bool, error)
 	GetConfig() config.CacheGoConfig
-	Set(cacheKey string, item interface{}) error
+	Set(cacheKey string, item []byte) error
 	GetItemTTL(cacheKey string) (time.Duration, bool, error)
-	ExtendTTL(cacheKey string, item interface{}) error
+	ExtendTTL(cacheKey string, item []byte) error
 }
 
 // The line `var CacheInstance CacheInterface` is declaring a variable named `CacheInstance` of type

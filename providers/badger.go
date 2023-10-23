@@ -30,17 +30,6 @@ type BadgerCache struct {
 	Config config.CacheGoConfig
 }
 
-// The BadgerItem type represents an item with a time-to-live (TTL) and content.
-// @property TTL - TTL stands for "Time to Live" and it represents the expiration time for the item. It
-// is a time.Time type, which means it stores a specific point in time.
-// @property Content - The "Content" property is an interface type, which means it can hold values of
-// any type. It can be used to store any kind of data, such as strings, numbers, booleans, or even
-// custom types.
-type BadgerItem struct {
-	TTL     time.Time
-	Content interface{}
-}
-
 func (c *BadgerCache) GetConfig() config.CacheGoConfig {
 	return c.Config
 }
@@ -68,23 +57,23 @@ func (c *BadgerCache) Init() error {
 // The `Get` function is used to retrieve an item from the cache based on a given cache key. It takes a
 // cache key as input and returns three values: the content of the item (as an interface{}), a boolean
 // indicating if the item exists in the cache, and an error if any occurred.
-func (c *BadgerCache) Get(cacheKey string) (interface{}, bool, error) {
+func (c *BadgerCache) Get(cacheKey string) (string, bool, error) {
 	_, span := c.Config.Tracer.Start(c.Config.CTX, "Get")
 	defer span.End()
 
-	item, err := c.retrieveFromCache(cacheKey)
+	item, ttl, err := c.retrieveFromCache(cacheKey)
 	if err != nil {
-		return nil, false, err
+		return "", false, err
 	}
 
 	now := time.Now()
 
-	if item.TTL.Unix() <= now.Unix() {
+	if ttl.Unix() <= now.Unix() {
 		c.delete(cacheKey)
-		return item, false, nil
+		return "", false, nil
 	}
 
-	return item.Content, true, nil
+	return item, true, nil
 }
 
 // The `Set` function is used to store an item in the cache. It takes a cache key and an item as input.
@@ -92,7 +81,7 @@ func (c *BadgerCache) Get(cacheKey string) (interface{}, bool, error) {
 // with the serialized item and a TTL (time to live) value. It then starts a transaction, sets the
 // cache key-value pair in the transaction, and commits the transaction to persist the changes in the
 // cache. If any error occurs during the process, it is returned.
-func (c *BadgerCache) Set(cacheKey string, item interface{}) error {
+func (c *BadgerCache) Set(cacheKey string, item []byte) error {
 	_, span := c.Config.Tracer.Start(c.Config.CTX, "Set")
 	defer span.End()
 
@@ -102,7 +91,7 @@ func (c *BadgerCache) Set(cacheKey string, item interface{}) error {
 		return err
 	}
 
-	// Serialize the item to bytes
+	// Serialize the ttl to bytes
 	ttl := time.Now().Add(c.Config.TTL)
 	ttlBytes, err := json.Marshal(ttl)
 	if err != nil {
@@ -140,27 +129,7 @@ func (c *BadgerCache) GetItemTTL(cacheKey string) (time.Duration, bool, error) {
 
 	var difference time.Duration
 
-	txn := c.Cache.NewTransaction(false)
-	defer txn.Discard()
-
-	var ttl time.Time
-
-	itemTTL, err := txn.Get([]byte(fmt.Sprintf("%s_ttl", cacheKey)))
-	if err != nil {
-		if err == badger.ErrKeyNotFound {
-			return difference, false, nil
-		}
-		return difference, false, err
-	}
-
-	err = itemTTL.Value(func(val []byte) error {
-		// Deserialize the value into the appropriate type
-		if err := json.Unmarshal(val, &ttl); err != nil {
-			return err
-		}
-		return nil
-	})
-
+	_, ttl, err := c.retrieveFromCache(cacheKey)
 	if err != nil {
 		return difference, false, err
 	}
@@ -174,7 +143,7 @@ func (c *BadgerCache) GetItemTTL(cacheKey string) (time.Duration, bool, error) {
 // The `ExtendTTL` function is used to extend the time to live (TTL) of an item in the cache. It takes
 // a cache key and an item as input. The function calls the `Set` function to update the item in the
 // cache with a new TTL. This effectively extends the lifespan of the item in the cache.
-func (c *BadgerCache) ExtendTTL(cacheKey string, item interface{}) error {
+func (c *BadgerCache) ExtendTTL(cacheKey string, item []byte) error {
 	_, span := c.Config.Tracer.Start(c.Config.CTX, "ExtendTTL")
 	defer span.End()
 
@@ -185,19 +154,19 @@ func (c *BadgerCache) ExtendTTL(cacheKey string, item interface{}) error {
 
 // The `retrieveFromCache` function is used to retrieve an item from the cache based on a given cache
 // key. It takes a cache key as input and returns a `BadgerItem` struct and an error.
-func (c *BadgerCache) retrieveFromCache(cacheKey string) (BadgerItem, error) {
+func (c *BadgerCache) retrieveFromCache(cacheKey string) (string, time.Time, error) {
 	txn := c.Cache.NewTransaction(false)
 	defer txn.Discard()
 
-	var itemValue BadgerItem
+	var itemValue string
 	var ttl time.Time
 
 	itemTTL, err := txn.Get([]byte(fmt.Sprintf("%s_ttl", cacheKey)))
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
-			return itemValue, nil
+			return itemValue, ttl, nil
 		}
-		return itemValue, err
+		return itemValue, ttl, err
 	}
 
 	err = itemTTL.Value(func(val []byte) error {
@@ -209,29 +178,30 @@ func (c *BadgerCache) retrieveFromCache(cacheKey string) (BadgerItem, error) {
 	})
 
 	if err != nil {
-		return itemValue, err
+		return itemValue, ttl, err
 	}
-
-	itemValue.TTL = ttl
 
 	itemContent, err := txn.Get([]byte(fmt.Sprintf("%s_content", cacheKey)))
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
-			return itemValue, nil
+			return itemValue, ttl, err
 		}
-		return itemValue, err
+		return itemValue, ttl, err
 	}
 
 	err = itemContent.Value(func(val []byte) error {
-		itemValue.Content = val
+
+		if err := json.Unmarshal(val, &itemValue); err != nil {
+			return err
+		}
 		return nil
 	})
 
 	if err != nil {
-		return itemValue, err
+		return itemValue, ttl, err
 	}
 
-	return itemValue, nil
+	return itemValue, ttl, nil
 }
 
 // The `delete` function is used to delete an item from the cache based on a given cache key. It takes
