@@ -57,20 +57,20 @@ func (c *BadgerCache) Init() error {
 // The `Get` function is used to retrieve an item from the cache based on a given cache key. It takes a
 // cache key as input and returns three values: the content of the item (as an interface{}), a boolean
 // indicating if the item exists in the cache, and an error if any occurred.
-func (c *BadgerCache) Get(cacheKey string) (string, bool, error) {
+func (c *BadgerCache) Get(cacheKey string) ([]byte, bool, error) {
 	_, span := c.Config.Tracer.Start(c.Config.CTX, "Get")
 	defer span.End()
 
 	item, ttl, err := c.retrieveFromCache(cacheKey)
 	if err != nil {
-		return "", false, err
+		return item, false, err
 	}
 
 	now := time.Now()
 
 	if ttl.Unix() <= now.Unix() {
 		c.delete(cacheKey)
-		return "", false, nil
+		return item, false, nil
 	}
 
 	return item, true, nil
@@ -85,12 +85,6 @@ func (c *BadgerCache) Set(cacheKey string, item []byte) error {
 	_, span := c.Config.Tracer.Start(c.Config.CTX, "Set")
 	defer span.End()
 
-	// Serialize the item to bytes
-	itemBytes, err := json.Marshal(item)
-	if err != nil {
-		return err
-	}
-
 	// Serialize the ttl to bytes
 	ttl := time.Now().Add(c.Config.TTL)
 	ttlBytes, err := json.Marshal(ttl)
@@ -103,7 +97,7 @@ func (c *BadgerCache) Set(cacheKey string, item []byte) error {
 	defer txn.Discard()
 
 	// Set the cache key-value pair
-	if err := txn.Set([]byte(fmt.Sprintf("%s_content", cacheKey)), itemBytes); err != nil {
+	if err := txn.Set([]byte(fmt.Sprintf("%s_content", cacheKey)), item); err != nil {
 		return err
 	}
 
@@ -154,11 +148,11 @@ func (c *BadgerCache) ExtendTTL(cacheKey string, item []byte) error {
 
 // The `retrieveFromCache` function is used to retrieve an item from the cache based on a given cache
 // key. It takes a cache key as input and returns a `BadgerItem` struct and an error.
-func (c *BadgerCache) retrieveFromCache(cacheKey string) (string, time.Time, error) {
+func (c *BadgerCache) retrieveFromCache(cacheKey string) ([]byte, time.Time, error) {
 	txn := c.Cache.NewTransaction(false)
 	defer txn.Discard()
 
-	var itemValue string
+	var itemValue []byte
 	var ttl time.Time
 
 	itemTTL, err := txn.Get([]byte(fmt.Sprintf("%s_ttl", cacheKey)))

@@ -57,11 +57,11 @@ func (c *RedisCache) Init() error {
 
 // The `Get` function is a method of the `RedisCache` struct. It is used to retrieve an item from the
 // Redis cache based on the provided cache key.
-func (c *RedisCache) Get(cacheKey string) (string, bool, error) {
+func (c *RedisCache) Get(cacheKey string) ([]byte, bool, error) {
 	_, span := c.Config.Tracer.Start(c.Config.CTX, "Get")
 	defer span.End()
 
-	item, err := c.Cache.Get(c.Config.CTX, cacheKey).Result()
+	item, err := c.Cache.Get(c.Config.CTX, cacheKey).Bytes()
 
 	switch {
 	case err == redis.Nil:

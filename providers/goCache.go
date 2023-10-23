@@ -41,13 +41,13 @@ func (c *GoCache) Init() error {
 	return nil
 }
 
-func (c *GoCache) Get(cacheKey string) (string, bool, error) {
+func (c *GoCache) Get(cacheKey string) ([]byte, bool, error) {
 	_, span := c.Config.Tracer.Start(c.Config.CTX, "Get")
 	defer span.End()
 
 	item, found := c.Cache.Get(cacheKey)
 
-	return item.(string), found, nil
+	return item.([]byte), found, nil
 }
 
 // The `Set` function is used to store an item in the cache. It takes two parameters: `cacheKey`, which
