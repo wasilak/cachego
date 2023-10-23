@@ -2,6 +2,7 @@ package providers
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	badger "github.com/dgraph-io/badger/v4"
@@ -95,15 +96,15 @@ func (c *BadgerCache) Set(cacheKey string, item interface{}) error {
 	_, span := c.Config.Tracer.Start(c.Config.CTX, "Set")
 	defer span.End()
 
-	ttl := time.Now().Add(c.Config.TTL)
-
-	badgerItem := BadgerItem{
-		Content: item,
-		TTL:     ttl,
+	// Serialize the item to bytes
+	itemBytes, err := json.Marshal(item)
+	if err != nil {
+		return err
 	}
 
 	// Serialize the item to bytes
-	itemBytes, err := json.Marshal(badgerItem)
+	ttl := time.Now().Add(c.Config.TTL)
+	ttlBytes, err := json.Marshal(ttl)
 	if err != nil {
 		return err
 	}
@@ -113,7 +114,12 @@ func (c *BadgerCache) Set(cacheKey string, item interface{}) error {
 	defer txn.Discard()
 
 	// Set the cache key-value pair
-	if err := txn.Set([]byte(cacheKey), itemBytes); err != nil {
+	if err := txn.Set([]byte(fmt.Sprintf("%s_content", cacheKey)), itemBytes); err != nil {
+		return err
+	}
+
+	// Set the cache key-value pair
+	if err := txn.Set([]byte(fmt.Sprintf("%s_ttl", cacheKey)), ttlBytes); err != nil {
 		return err
 	}
 
@@ -132,15 +138,35 @@ func (c *BadgerCache) GetItemTTL(cacheKey string) (time.Duration, bool, error) {
 	_, span := c.Config.Tracer.Start(c.Config.CTX, "GetItemTTL")
 	defer span.End()
 
-	var itemTTL time.Duration
+	var difference time.Duration
 
-	item, err := c.retrieveFromCache(cacheKey)
+	txn := c.Cache.NewTransaction(false)
+	defer txn.Discard()
+
+	var ttl time.Time
+
+	itemTTL, err := txn.Get([]byte(fmt.Sprintf("%s_ttl", cacheKey)))
 	if err != nil {
-		return itemTTL, false, err
+		if err == badger.ErrKeyNotFound {
+			return difference, false, nil
+		}
+		return difference, false, err
+	}
+
+	err = itemTTL.Value(func(val []byte) error {
+		// Deserialize the value into the appropriate type
+		if err := json.Unmarshal(val, &ttl); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		return difference, false, err
 	}
 
 	now := time.Now()
-	difference := item.TTL.Sub(now)
+	difference = ttl.Sub(now)
 
 	return difference, true, nil
 }
@@ -164,8 +190,9 @@ func (c *BadgerCache) retrieveFromCache(cacheKey string) (BadgerItem, error) {
 	defer txn.Discard()
 
 	var itemValue BadgerItem
+	var ttl time.Time
 
-	item, err := txn.Get([]byte(cacheKey))
+	itemTTL, err := txn.Get([]byte(fmt.Sprintf("%s_ttl", cacheKey)))
 	if err != nil {
 		if err == badger.ErrKeyNotFound {
 			return itemValue, nil
@@ -173,11 +200,30 @@ func (c *BadgerCache) retrieveFromCache(cacheKey string) (BadgerItem, error) {
 		return itemValue, err
 	}
 
-	err = item.Value(func(val []byte) error {
+	err = itemTTL.Value(func(val []byte) error {
 		// Deserialize the value into the appropriate type
-		if err := json.Unmarshal(val, &itemValue); err != nil {
+		if err := json.Unmarshal(val, &ttl); err != nil {
 			return err
 		}
+		return nil
+	})
+
+	if err != nil {
+		return itemValue, err
+	}
+
+	itemValue.TTL = ttl
+
+	itemContent, err := txn.Get([]byte(fmt.Sprintf("%s_content", cacheKey)))
+	if err != nil {
+		if err == badger.ErrKeyNotFound {
+			return itemValue, nil
+		}
+		return itemValue, err
+	}
+
+	err = itemContent.Value(func(val []byte) error {
+		itemValue.Content = val
 		return nil
 	})
 
@@ -199,7 +245,12 @@ func (c *BadgerCache) delete(cacheKey string) error {
 	defer txn.Discard()
 
 	// Delete the item by key
-	if err := txn.Delete([]byte(cacheKey)); err != nil {
+	if err := txn.Delete([]byte(fmt.Sprintf("%s_content", cacheKey))); err != nil {
+		return err
+	}
+
+	// Delete the item by key
+	if err := txn.Delete([]byte(fmt.Sprintf("%s_ttl", cacheKey))); err != nil {
 		return err
 	}
 

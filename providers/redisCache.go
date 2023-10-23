@@ -91,7 +91,7 @@ func (c *RedisCache) Get(cacheKey string) (interface{}, bool, error) {
 		return item, false, err
 	}
 
-	return item, true, nil
+	return data.Content, true, nil
 }
 
 // The `Set` function is a method of the `RedisCache` struct. It is used to store an item in the Redis

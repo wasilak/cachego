@@ -70,8 +70,7 @@ func CacheInit(ctx context.Context, cacheConfig config.CacheGoConfig) (CacheInte
 			}
 		}
 
-	case "file":
-	case "badger":
+	case "file", "badger":
 		{
 			config.DefaultConfig.Tracer = otel.Tracer("FileCache")
 			CacheInstance = &providers.BadgerCache{
