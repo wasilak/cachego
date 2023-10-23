@@ -1,12 +1,11 @@
 package providers
 
 import (
-	"context"
 	"encoding/json"
 	"time"
 
 	badger "github.com/dgraph-io/badger/v4"
-	"go.opentelemetry.io/otel/trace"
+	"github.com/wasilak/cachego/config"
 )
 
 // The BadgerCache type represents a cache with a Badger database, a time-to-live duration, a tracer, a
@@ -26,10 +25,8 @@ import (
 // BadgerCache database is stored.
 type BadgerCache struct {
 	Cache  *badger.DB
-	TTL    time.Duration
-	Tracer trace.Tracer
-	CTX    context.Context
 	Path   string
+	Config config.CacheGoConfig
 }
 
 // The BadgerItem type represents an item with a time-to-live (TTL) and content.
@@ -43,11 +40,15 @@ type BadgerItem struct {
 	Content interface{}
 }
 
+func (c *BadgerCache) GetConfig() config.CacheGoConfig {
+	return c.Config
+}
+
 // The `Init` function is used to initialize the BadgerCache. It opens a connection to the Badger
 // database using the provided path and sets the Cache field of the BadgerCache struct to the opened
 // database. If any error occurs during the initialization process, it is returned.
 func (c *BadgerCache) Init() error {
-	_, span := c.Tracer.Start(c.CTX, "Init")
+	_, span := c.Config.Tracer.Start(c.Config.CTX, "Init")
 	defer span.End()
 
 	opts := badger.DefaultOptions(c.Path)
@@ -67,7 +68,7 @@ func (c *BadgerCache) Init() error {
 // cache key as input and returns three values: the content of the item (as an interface{}), a boolean
 // indicating if the item exists in the cache, and an error if any occurred.
 func (c *BadgerCache) Get(cacheKey string) (interface{}, bool, error) {
-	_, span := c.Tracer.Start(c.CTX, "Get")
+	_, span := c.Config.Tracer.Start(c.Config.CTX, "Get")
 	defer span.End()
 
 	item, err := c.retrieveFromCache(cacheKey)
@@ -91,10 +92,10 @@ func (c *BadgerCache) Get(cacheKey string) (interface{}, bool, error) {
 // cache key-value pair in the transaction, and commits the transaction to persist the changes in the
 // cache. If any error occurs during the process, it is returned.
 func (c *BadgerCache) Set(cacheKey string, item interface{}) error {
-	_, span := c.Tracer.Start(c.CTX, "Set")
+	_, span := c.Config.Tracer.Start(c.Config.CTX, "Set")
 	defer span.End()
 
-	ttl := time.Now().Add(c.TTL)
+	ttl := time.Now().Add(c.Config.TTL)
 
 	badgerItem := BadgerItem{
 		Content: item,
@@ -128,7 +129,7 @@ func (c *BadgerCache) Set(cacheKey string, item interface{}) error {
 // cache. It takes a cache key as input and returns the remaining TTL duration, a boolean indicating if
 // the item exists in the cache, and an error if any occurred.
 func (c *BadgerCache) GetItemTTL(cacheKey string) (time.Duration, bool, error) {
-	_, span := c.Tracer.Start(c.CTX, "GetItemTTL")
+	_, span := c.Config.Tracer.Start(c.Config.CTX, "GetItemTTL")
 	defer span.End()
 
 	var itemTTL time.Duration
@@ -148,7 +149,7 @@ func (c *BadgerCache) GetItemTTL(cacheKey string) (time.Duration, bool, error) {
 // a cache key and an item as input. The function calls the `Set` function to update the item in the
 // cache with a new TTL. This effectively extends the lifespan of the item in the cache.
 func (c *BadgerCache) ExtendTTL(cacheKey string, item interface{}) error {
-	_, span := c.Tracer.Start(c.CTX, "ExtendTTL")
+	_, span := c.Config.Tracer.Start(c.Config.CTX, "ExtendTTL")
 	defer span.End()
 
 	c.Set(cacheKey, item)
@@ -190,7 +191,7 @@ func (c *BadgerCache) retrieveFromCache(cacheKey string) (BadgerItem, error) {
 // The `delete` function is used to delete an item from the cache based on a given cache key. It takes
 // a cache key as input and returns an error if any occurred.
 func (c *BadgerCache) delete(cacheKey string) error {
-	_, span := c.Tracer.Start(c.CTX, "Delete")
+	_, span := c.Config.Tracer.Start(c.Config.CTX, "Delete")
 	defer span.End()
 
 	// Start a transaction

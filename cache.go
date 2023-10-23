@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"dario.cat/mergo"
+	"github.com/wasilak/cachego/config"
 	"github.com/wasilak/cachego/providers"
 	"go.opentelemetry.io/otel"
 )
@@ -29,42 +30,10 @@ import (
 type CacheInterface interface {
 	Init() error
 	Get(cacheKey string) (interface{}, bool, error)
+	GetConfig() config.CacheGoConfig
 	Set(cacheKey string, item interface{}) error
 	GetItemTTL(cacheKey string) (time.Duration, bool, error)
 	ExtendTTL(cacheKey string, item interface{}) error
-}
-
-// The `CacheGoConfig` type represents the configuration for a cache in Go, including the type,
-// expiration, Redis host, Redis database, and path.
-// @property {string} Type - The "Type" property is used to specify the type of cache to be used. It
-// can be set to values like "memory", "redis", or "file" depending on the desired cache
-// implementation.
-// @property {string} Expiration - The "Expiration" property in the CacheGoConfig struct represents the
-// duration for which the cache entries will be considered valid before they expire. It is typically
-// specified as a string in a time format, such as "1h" for 1 hour, "30m" for 30 minutes, or
-// @property {string} RedisHost - The RedisHost property is used to specify the host address of the
-// Redis server that the cache will connect to.
-// @property {int} RedisDB - RedisDB is an integer property that represents the database number to be
-// used for caching in Redis.
-// @property {string} Path - The `Path` property is a string that represents the file path where the
-// cache data will be stored.
-type CacheGoConfig struct {
-	Type       string
-	Expiration string
-	RedisHost  string
-	RedisDB    int
-	Path       string
-}
-
-// The `var defaultConfig = CacheGoConfig{...}` statement is initializing a variable named
-// `defaultConfig` with a value of type `CacheGoConfig`. It is setting the properties of the
-// `CacheGoConfig` struct with default values.
-var defaultConfig = CacheGoConfig{
-	Type:       "memory",
-	Expiration: "10m",
-	RedisHost:  "127.0.0.1:6379",
-	RedisDB:    0,
-	Path:       "/tmp/cachego",
 }
 
 // The line `var CacheInstance CacheInterface` is declaring a variable named `CacheInstance` of type
@@ -74,50 +43,50 @@ var CacheInstance CacheInterface
 
 // The function `CacheInit` initializes and returns a cache instance based on the provided
 // configuration.
-func CacheInit(ctx context.Context, config CacheGoConfig) (CacheInterface, error) {
+func CacheInit(ctx context.Context, cacheConfig config.CacheGoConfig) (CacheInterface, error) {
 	tracer := otel.Tracer("Cache")
 	_, span := tracer.Start(ctx, "CacheInit")
 	defer span.End()
 
-	err := mergo.Merge(&defaultConfig, config, mergo.WithOverride)
+	err := mergo.Merge(&config.DefaultConfig, cacheConfig, mergo.WithOverride)
 	if err != nil {
 		return nil, err
 	}
 
-	ttl, err := time.ParseDuration(defaultConfig.Expiration)
+	ttl, err := time.ParseDuration(config.DefaultConfig.Expiration)
 	if err != nil {
 		return nil, err
 	}
 
-	switch defaultConfig.Type {
+	config.DefaultConfig.CTX = ctx
+	config.DefaultConfig.TTL = ttl
+
+	switch config.DefaultConfig.Type {
 	case "memory":
 		{
+			config.DefaultConfig.Tracer = otel.Tracer("GoCache")
 			CacheInstance = &providers.GoCache{
-				TTL:    ttl,
-				Tracer: otel.Tracer("GoCache"),
-				CTX:    ctx,
+				Config: config.DefaultConfig,
 			}
 		}
 
 	case "file":
 	case "badger":
 		{
+			config.DefaultConfig.Tracer = otel.Tracer("FileCache")
 			CacheInstance = &providers.BadgerCache{
-				TTL:    ttl,
-				Tracer: otel.Tracer("FileCache"),
-				CTX:    ctx,
-				Path:   defaultConfig.Path,
+				Path:   config.DefaultConfig.Path,
+				Config: config.DefaultConfig,
 			}
 		}
 
 	case "redis":
 		{
+			config.DefaultConfig.Tracer = otel.Tracer("RedisCache")
 			CacheInstance = &providers.RedisCache{
-				Address: defaultConfig.RedisHost,
-				DB:      defaultConfig.RedisDB,
-				TTL:     ttl,
-				Tracer:  otel.Tracer("RedisCache"),
-				CTX:     ctx,
+				Address: config.DefaultConfig.RedisHost,
+				DB:      config.DefaultConfig.RedisDB,
+				Config:  config.DefaultConfig,
 			}
 		}
 
