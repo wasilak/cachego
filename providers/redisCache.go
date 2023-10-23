@@ -1,7 +1,6 @@
 package providers
 
 import (
-	"encoding/json"
 	"time"
 
 	"log/slog"
@@ -34,13 +33,6 @@ type RedisCache struct {
 	Address string
 	DB      int
 	Config  config.CacheGoConfig
-}
-
-// The RedisItem type is a struct that contains a field called Content of type interface{}.
-// @property Content - The "Content" property in the RedisItem struct is of type interface{}. This
-// means that it can hold values of any type.
-type RedisItem struct {
-	Content interface{}
 }
 
 func (c *RedisCache) GetConfig() config.CacheGoConfig {
@@ -84,14 +76,7 @@ func (c *RedisCache) Get(cacheKey string) (interface{}, bool, error) {
 		return item, false, err
 	}
 
-	var data RedisItem
-
-	// Unmarshal the JSON data into the provided data interface
-	if err := json.Unmarshal([]byte(item), &data); err != nil {
-		return item, false, err
-	}
-
-	return data.Content, true, nil
+	return item, true, nil
 }
 
 // The `Set` function is a method of the `RedisCache` struct. It is used to store an item in the Redis
@@ -100,17 +85,7 @@ func (c *RedisCache) Set(cacheKey string, item interface{}) error {
 	_, span := c.Config.Tracer.Start(c.Config.CTX, "Set")
 	defer span.End()
 
-	data := RedisItem{
-		Content: item,
-	}
-
-	// Serialize the item to bytes
-	itemBytes, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-
-	return c.Cache.Set(c.Config.CTX, cacheKey, itemBytes, c.Config.TTL).Err()
+	return c.Cache.Set(c.Config.CTX, cacheKey, item, c.Config.TTL).Err()
 }
 
 // The `GetItemTTL` function is a method of the `RedisCache` struct. It is used to retrieve the
