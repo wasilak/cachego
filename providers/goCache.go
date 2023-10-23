@@ -47,6 +47,11 @@ func (c *GoCache) Get(cacheKey string) ([]byte, bool, error) {
 
 	item, found := c.Cache.Get(cacheKey)
 
+	if item == nil {
+		var empty []byte
+		return empty, found, nil
+	}
+
 	return item.([]byte), found, nil
 }
 

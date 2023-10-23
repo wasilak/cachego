@@ -184,10 +184,7 @@ func (c *BadgerCache) retrieveFromCache(cacheKey string) ([]byte, time.Time, err
 	}
 
 	err = itemContent.Value(func(val []byte) error {
-
-		if err := json.Unmarshal(val, &itemValue); err != nil {
-			return err
-		}
+		itemValue = val
 		return nil
 	})
 
