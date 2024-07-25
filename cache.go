@@ -30,7 +30,7 @@ import (
 type CacheInterface interface {
 	Init() error
 	Get(cacheKey string) ([]byte, bool, error)
-	GetConfig() config.CacheGoConfig
+	GetConfig() config.Config
 	Set(cacheKey string, item []byte) error
 	GetItemTTL(cacheKey string) (time.Duration, bool, error)
 	ExtendTTL(cacheKey string, item []byte) error
@@ -43,7 +43,7 @@ var CacheInstance CacheInterface
 
 // The function `CacheInit` initializes and returns a cache instance based on the provided
 // configuration.
-func CacheInit(ctx context.Context, cacheConfig config.CacheGoConfig) (CacheInterface, error) {
+func CacheInit(ctx context.Context, cacheConfig config.Config) (CacheInterface, error) {
 	tracer := otel.Tracer("Cache")
 	_, span := tracer.Start(ctx, "CacheInit")
 	defer span.End()

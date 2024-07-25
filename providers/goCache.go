@@ -21,10 +21,10 @@ import (
 // propagate across API boundaries and between processes.
 type GoCache struct {
 	Cache  *gocache.Cache
-	Config config.CacheGoConfig
+	Config config.Config
 }
 
-func (c *GoCache) GetConfig() config.CacheGoConfig {
+func (c *GoCache) GetConfig() config.Config {
 	return c.Config
 }
 

@@ -7,12 +7,12 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// The `CacheGoConfig` type represents the configuration for a cache in Go, including the type,
+// The `Config` type represents the configuration for a cache in Go, including the type,
 // expiration, Redis host, Redis database, and path.
 // @property {string} Type - The "Type" property is used to specify the type of cache to be used. It
 // can be set to values like "memory", "redis", or "file" depending on the desired cache
 // implementation.
-// @property {string} Expiration - The "Expiration" property in the CacheGoConfig struct represents the
+// @property {string} Expiration - The "Expiration" property in the Config struct represents the
 // duration for which the cache entries will be considered valid before they expire. It is typically
 // specified as a string in a time format, such as "1h" for 1 hour, "30m" for 30 minutes, or
 // @property {string} RedisHost - The RedisHost property is used to specify the host address of the
@@ -21,7 +21,7 @@ import (
 // used for caching in Redis.
 // @property {string} Path - The `Path` property is a string that represents the file path where the
 // cache data will be stored.
-type CacheGoConfig struct {
+type Config struct {
 	Type       string
 	Expiration string
 	RedisHost  string
@@ -32,10 +32,10 @@ type CacheGoConfig struct {
 	CTX        context.Context
 }
 
-// The `var defaultConfig = CacheGoConfig{...}` statement is initializing a variable named
-// `defaultConfig` with a value of type `CacheGoConfig`. It is setting the properties of the
-// `CacheGoConfig` struct with default values.
-var DefaultConfig = CacheGoConfig{
+// The `var defaultConfig = Config{...}` statement is initializing a variable named
+// `defaultConfig` with a value of type `Config`. It is setting the properties of the
+// `Config` struct with default values.
+var DefaultConfig = Config{
 	CTX:        context.Background(),
 	Type:       "memory",
 	Expiration: "10m",

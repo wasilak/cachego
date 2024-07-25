@@ -27,10 +27,10 @@ import (
 type BadgerCache struct {
 	Cache  *badger.DB
 	Path   string
-	Config config.CacheGoConfig
+	Config config.Config
 }
 
-func (c *BadgerCache) GetConfig() config.CacheGoConfig {
+func (c *BadgerCache) GetConfig() config.Config {
 	return c.Config
 }
 

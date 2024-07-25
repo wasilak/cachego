@@ -32,10 +32,10 @@ type RedisCache struct {
 	Cache   *redis.Client
 	Address string
 	DB      int
-	Config  config.CacheGoConfig
+	Config  config.Config
 }
 
-func (c *RedisCache) GetConfig() config.CacheGoConfig {
+func (c *RedisCache) GetConfig() config.Config {
 	return c.Config
 }
 
