@@ -5,7 +5,7 @@ go 1.22
 require (
 	dario.cat/mergo v1.0.1
 	github.com/dgraph-io/badger/v4 v4.3.0
-	github.com/go-redis/redis/v8 v8.11.5
+	github.com/go-redis/redis/v9 v9.6.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	go.opentelemetry.io/otel v1.30.0
 	go.opentelemetry.io/otel/trace v1.30.0
