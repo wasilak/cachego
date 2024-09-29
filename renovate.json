@@ -3,6 +3,10 @@
   "extends": [
     "config:recommended"
   ],
+  "labels": [
+    "dependencies",
+    "renovate"
+  ],
   "pinDigests": false,
   "enabled": true,
   "separateMajorMinor": true,
