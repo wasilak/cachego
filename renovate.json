@@ -12,9 +12,11 @@
       "matchManagers": [
         "gomod"
       ],
-      "postUpdateOptions": {
-        "gomodTidy": true
-      }
+      "postUpdateOptions": [
+        {
+          "gomodTidy": true
+        }
+      ]
     }
   ]
 }
