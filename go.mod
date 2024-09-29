@@ -3,7 +3,7 @@ module github.com/wasilak/cachego
 go 1.22
 
 require (
-	dario.cat/mergo v1.0.0
+	dario.cat/mergo v1.0.1
 	github.com/dgraph-io/badger/v4 v4.2.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/patrickmn/go-cache v2.1.0+incompatible
