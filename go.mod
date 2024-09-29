@@ -7,8 +7,8 @@ require (
 	github.com/dgraph-io/badger/v4 v4.3.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	go.opentelemetry.io/otel v1.28.0
-	go.opentelemetry.io/otel/trace v1.28.0
+	go.opentelemetry.io/otel v1.30.0
+	go.opentelemetry.io/otel/trace v1.30.0
 )
 
 require (
@@ -27,7 +27,7 @@ require (
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/otel/metric v1.28.0 // indirect
+	go.opentelemetry.io/otel/metric v1.30.0 // indirect
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/sys v0.24.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
