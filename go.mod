@@ -2,7 +2,7 @@ module github.com/wasilak/cachego
 
 go 1.24
 
-toolchain go1.25.3
+toolchain go1.25.4
 
 require (
 	dario.cat/mergo v1.0.2
