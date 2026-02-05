@@ -6,7 +6,7 @@ toolchain go1.25.7
 
 require (
 	dario.cat/mergo v1.0.2
-	github.com/dgraph-io/badger/v4 v4.9.0
+	github.com/dgraph-io/badger/v4 v4.9.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/redis/go-redis/v9 v9.17.3
 	go.opentelemetry.io/otel v1.40.0
