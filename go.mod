@@ -8,7 +8,7 @@ require (
 	dario.cat/mergo v1.0.2
 	github.com/dgraph-io/badger/v4 v4.9.6
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/redis/go-redis/v9 v9.23.0
+	github.com/redis/go-redis/v9 v9.24.0
 	go.opentelemetry.io/otel v1.47.0
 	go.opentelemetry.io/otel/trace v1.47.0
 )
@@ -27,6 +27,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.47.0 // indirect
 	go.uber.org/atomic v1.12.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/sys v0.50.0 // indirect
 	google.golang.org/protobuf v1.36.7 // indirect
 )
