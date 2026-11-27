@@ -8,7 +8,7 @@ require (
 	dario.cat/mergo v1.0.2
 	github.com/dgraph-io/badger/v4 v4.9.6
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/redis/go-redis/v9 v9.24.0
+	github.com/redis/go-redis/v9 v9.24.1
 	go.opentelemetry.io/otel v1.47.0
 	go.opentelemetry.io/otel/trace v1.47.0
 )
